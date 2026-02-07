@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-// Initialize OpenAI client server-side
-const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.AI_OPENROUTER_API_KEY,
-});
+// Lazy-load OpenAI client inside handler to avoid build-time errors
+function getOpenAIClient() {
+  const apiKey = process.env.AI_OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI_OPENROUTER_API_KEY missing");
+  }
+  return new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: apiKey,
+  });
+}
 
 // Helper: retry with exponential backoff
 const callWithRetry = async (fn, maxRetries = 2) => {
@@ -14,20 +20,16 @@ const callWithRetry = async (fn, maxRetries = 2) => {
       return await fn();
     } catch (error) {
       if (error?.status === 429 && attempt < maxRetries - 1) {
-        const delay = Math.pow(2, attempt + 1) * 1000; // 2s, 4s
+        const delay = Math.pow(2, attempt + 1) * 1000;
         console.log(`Rate limited, retrying in ${delay / 1000}s...`);
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
       if (error?.status === 429) {
-        throw new Error(
-          "Rate limit reached. Please wait a moment and try again."
-        );
+        throw new Error("Rate limit reached. Please wait a moment and try again.");
       }
       if (error?.status === 402) {
-        throw new Error(
-          "API credits exhausted. The free tier is limited to 50 requests/day."
-        );
+        throw new Error("API credits exhausted. The free tier is limited to 50 requests/day.");
       }
       throw error;
     }
@@ -45,14 +47,8 @@ export async function POST(request) {
       );
     }
 
-    const apiKey = process.env.AI_OPENROUTER_API_KEY;
-    if (!apiKey) {
-      console.error("❌ AI_OPENROUTER_API_KEY missing in environment");
-      return NextResponse.json(
-        { error: "Server misconfigured" },
-        { status: 500 }
-      );
-    }
+    // Lazy-load client at request time, not build time
+    const openai = getOpenAIClient();
 
     const response = await callWithRetry(async () => {
       const completion = await openai.chat.completions.create({
@@ -69,7 +65,6 @@ export async function POST(request) {
   } catch (error) {
     console.error("❌ OpenRouter API error:", error);
     
-    // Return user-friendly error messages
     const errorMessage = error.message || "Failed to process AI request";
     return NextResponse.json(
       { error: errorMessage },
@@ -77,3 +72,4 @@ export async function POST(request) {
     );
   }
 }
+
