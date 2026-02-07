@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# agent and debug files
+.agent/
+*.backup
+app/auth-debug/
+app/api/auth-debug/

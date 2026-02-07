@@ -14,6 +14,33 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true,
 });
 
+// Helper: retry with exponential backoff
+const callWithRetry = async (fn, maxRetries = 2) => {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error?.status === 429 && attempt < maxRetries - 1) {
+        const delay = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
+        console.log(`Rate limited, retrying in ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      if (error?.status === 429) {
+        throw new Error(
+          "Rate limit reached. Please wait a moment and try again."
+        );
+      }
+      if (error?.status === 402) {
+        throw new Error(
+          "API credits exhausted. The free tier is limited to 50 requests/day."
+        );
+      }
+      throw error;
+    }
+  }
+};
+
 export const AIModel = async (topic, coachingOptionName, msg) => {
   const options = Array.isArray(CoachingOptionsData)
     ? CoachingOptionsData
@@ -24,19 +51,22 @@ export const AIModel = async (topic, coachingOptionName, msg) => {
     return "Sorry, I could not find the requested coaching mode.";
   }
   const prompt = option.prompt.replace("{user_topic}", topic);
-  const completion = await openai.chat.completions.create({
-    model: "mistralai/mistral-7b-instruct:free",
-    messages: [
-      { role: "system", content: prompt },
-      { role: "user", content: msg },
-    ],
+
+  return callWithRetry(async () => {
+    const completion = await openai.chat.completions.create({
+      model: "mistralai/mistral-small-3.1-24b-instruct:free",
+      messages: [
+        { role: "system", content: prompt },
+        { role: "user", content: msg },
+      ],
+    });
+    return completion.choices[0]?.message?.content || "No response";
   });
-  return completion.choices[0]?.message?.content || "No response";
 };
 
 export const AIModelToGenerateFeedbackAndNotes = async (
   coachingOptionName,
-  conversation
+  conversation,
 ) => {
   const options = Array.isArray(CoachingOptionsData)
     ? CoachingOptionsData
@@ -55,11 +85,13 @@ export const AIModelToGenerateFeedbackAndNotes = async (
     content,
   }));
 
-  const completion = await openai.chat.completions.create({
-    model: "mistralai/mistral-7b-instruct:free",
-    messages: [...messagesForAI, { role: "system", content: summaryPrompt }],
+  return callWithRetry(async () => {
+    const completion = await openai.chat.completions.create({
+      model: "mistralai/mistral-small-3.1-24b-instruct:free",
+      messages: [...messagesForAI, { role: "system", content: summaryPrompt }],
+    });
+    return completion.choices[0]?.message?.content || "No response";
   });
-  return completion.choices[0]?.message?.content || "No response";
 };
 
 /* ----------  T T S   ---------- */

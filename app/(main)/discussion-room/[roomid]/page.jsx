@@ -149,7 +149,7 @@ export default function DiscussionRoom() {
               ...prev,
               {
                 role: "assistant",
-                content: "Sorry, I could not process that.",
+                content: err.message || "Sorry, I could not process that.",
                 ts: Date.now(),
                 spoken: true,
               },
@@ -258,7 +258,7 @@ export default function DiscussionRoom() {
   };
 
   return (
-    <div className="-mt-12">
+    <div>
       <audio ref={audioRef} className="hidden" />
       <h2 className="text-2xl font-bold">
         {DiscussionRoomData?.CoachingOptions}

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@stackframe/stack";
 import { cn } from "@/lib/utils"; // already exists
-import { Menu, X } from "lucide-react"; // already installed
+import { Menu, X, Moon, Sun } from "lucide-react"; // already installed
+import { useTheme } from "next-themes";
 
 const navLinks = [
   { label: "Dashboard", href: "/dashboard" },
@@ -16,6 +17,11 @@ const navLinks = [
 function AppHeader() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => setMounted(true), []);
 
   // close mobile menu on route change
   useEffect(() => setMobileOpen(false), [pathname]);
@@ -97,6 +103,20 @@ function AppHeader() {
 
         {/* Right slot */}
         <div className="flex items-center gap-3">
+          {/* Dark mode toggle */}
+          {mounted && (
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="p-2 rounded-md hover:bg-accent transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </button>
+          )}
           <UserButton />
           {/* Mobile burger */}
           <button

@@ -1,20 +1,20 @@
 "use client";
 import React, { Suspense } from "react";
+import { ThemeProvider } from "next-themes";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import AuthProvider from "./AuthProvider";
-import { useStackApp } from "@stackframe/stack";
+
+const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 function Provider({ children }) {
-  const stackApp = useStackApp();
-  if (!stackApp) return null; // prevents null log + crash
-
-  const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL);
   return (
-    <Suspense fallback={<p>Loading...</p>}>
-      <ConvexProvider client={convex}>
-        <AuthProvider>{children}</AuthProvider>
-      </ConvexProvider>
-    </Suspense>
+    <ConvexProvider client={convex}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <Suspense fallback={<div>Loading...</div>}>
+          <AuthProvider>{children}</AuthProvider>
+        </Suspense>
+      </ThemeProvider>
+    </ConvexProvider>
   );
 }
 
