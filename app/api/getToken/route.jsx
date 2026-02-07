@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 
+// Force dynamic - never run at build time
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function GET() {
   const apiKey = process.env.ASSEMBLYAI_API_KEY;
-  console.log("[/api/getToken] API key present:", !!apiKey);
 
   if (!apiKey) {
-    console.error("❌ ASSEMBLYAI_API_KEY missing in .env.local");
     return NextResponse.json(
       { error: "Server misconfigured" },
       { status: 500 }
@@ -13,17 +15,19 @@ export async function GET() {
   }
 
   try {
-    // Generate temporary token from AssemblyAI
-    // Token valid for 10 minutes, max session duration 3 hours
-    const response = await fetch('https://streaming.assemblyai.com/v3/token', {
-      method: 'GET',
+    // Generate temporary token from AssemblyAI realtime API
+    const response = await fetch("https://api.assemblyai.com/v2/realtime/token", {
+      method: "POST",
       headers: {
-        'Authorization': apiKey
-      }
+        "Authorization": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expires_in: 3600, // 1 hour
+      }),
     });
 
     if (!response.ok) {
-      console.error("❌ Failed to generate AssemblyAI token:", response.status);
       return NextResponse.json(
         { error: "Failed to generate token" },
         { status: 500 }
@@ -31,12 +35,10 @@ export async function GET() {
     }
 
     const data = await response.json();
-    console.log("[/api/getToken] Temporary token generated successfully");
     
     // Return temporary token (same format as before for compatibility)
     return NextResponse.json({ token: data.token });
   } catch (error) {
-    console.error("❌ Error generating AssemblyAI token:", error);
     return NextResponse.json(
       { error: "Failed to generate token" },
       { status: 500 }

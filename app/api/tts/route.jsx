@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 
+// Force dynamic - never run at build time
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function POST(request) {
   try {
     const { text, voiceId } = await request.json();
@@ -16,7 +20,6 @@ export async function POST(request) {
     const secretAccessKey = process.env.POLLY_SECRET_ACCESS_KEY;
 
     if (!accessKeyId || !secretAccessKey) {
-      console.error("❌ AWS credentials missing in environment");
       return NextResponse.json(
         { error: "Server misconfigured" },
         { status: 500 }
@@ -60,7 +63,6 @@ export async function POST(request) {
       },
     });
   } catch (error) {
-    console.error("❌ AWS Polly TTS error:", error);
     return NextResponse.json(
       { error: "Failed to generate speech" },
       { status: 500 }

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
+// Force dynamic - never run at build time
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 // Lazy-load OpenAI client inside handler to avoid build-time errors
 function getOpenAIClient() {
   const apiKey = process.env.AI_OPENROUTER_API_KEY;
@@ -21,7 +25,6 @@ const callWithRetry = async (fn, maxRetries = 2) => {
     } catch (error) {
       if (error?.status === 429 && attempt < maxRetries - 1) {
         const delay = Math.pow(2, attempt + 1) * 1000;
-        console.log(`Rate limited, retrying in ${delay / 1000}s...`);
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
@@ -63,8 +66,6 @@ export async function POST(request) {
       mode: mode 
     });
   } catch (error) {
-    console.error("❌ OpenRouter API error:", error);
-    
     const errorMessage = error.message || "Failed to process AI request";
     return NextResponse.json(
       { error: errorMessage },
@@ -72,4 +73,3 @@ export async function POST(request) {
     );
   }
 }
-
