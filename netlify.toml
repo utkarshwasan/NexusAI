@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Omit NEXT_PUBLIC_ variables from secrets scanning
+  # These are PUBLIC client-side keys that are meant to be in the build output
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_STACK_PROJECT_ID,NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY,NEXT_PUBLIC_CONVEX_URL"
