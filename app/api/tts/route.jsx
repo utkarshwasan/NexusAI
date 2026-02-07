@@ -12,8 +12,8 @@ export async function POST(request) {
       );
     }
 
-    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+    const accessKeyId = process.env.POLLY_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.POLLY_SECRET_ACCESS_KEY;
 
     if (!accessKeyId || !secretAccessKey) {
       console.error("❌ AWS credentials missing in environment");
