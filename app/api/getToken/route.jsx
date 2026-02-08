@@ -17,8 +17,8 @@ export async function GET() {
 
   try {
     // Generate temporary token from AssemblyAI v3 streaming API
-    // Docs: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
-    const response = await fetch("https://streaming.assemblyai.com/v3/token", {
+    // expires_in_seconds is required (1-600 seconds)
+    const response = await fetch("https://streaming.assemblyai.com/v3/token?expires_in_seconds=600", {
       method: "GET",
       headers: {
         "Authorization": apiKey,
