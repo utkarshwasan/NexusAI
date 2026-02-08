@@ -8,28 +8,28 @@ export async function GET() {
   const apiKey = process.env.ASSEMBLYAI_API_KEY;
 
   if (!apiKey) {
+    console.error("❌ ASSEMBLYAI_API_KEY is missing from environment variables");
     return NextResponse.json(
-      { error: "Server misconfigured" },
+      { error: "Server misconfigured: Missing API Key" },
       { status: 500 }
     );
   }
 
   try {
-    // Generate temporary token from AssemblyAI realtime API
-    const response = await fetch("https://api.assemblyai.com/v2/realtime/token", {
-      method: "POST",
+    // Generate temporary token from AssemblyAI v3 streaming API
+    // Docs: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+    const response = await fetch("https://streaming.assemblyai.com/v3/token", {
+      method: "GET",
       headers: {
         "Authorization": apiKey,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        expires_in: 3600, // 1 hour
-      }),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ AssemblyAI v3 Token Error: ${response.status} ${response.statusText}`, errorText);
       return NextResponse.json(
-        { error: "Failed to generate token" },
+        { error: `Failed to generate token: ${response.status}` },
         { status: 500 }
       );
     }
@@ -39,6 +39,7 @@ export async function GET() {
     // Return temporary token (same format as before for compatibility)
     return NextResponse.json({ token: data.token });
   } catch (error) {
+    console.error("❌ Exception during token generation:", error);
     return NextResponse.json(
       { error: "Failed to generate token" },
       { status: 500 }
